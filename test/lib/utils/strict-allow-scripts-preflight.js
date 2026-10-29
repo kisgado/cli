@@ -220,7 +220,11 @@ t.test('global error points at --allow-scripts, not approve-scripts', async t =>
   await t.rejects(
     preflight({
       arb,
-      npm: { global: true, flatOptions: { strictAllowScripts: true } },
+      npm: {
+        global: true,
+        flatOptions: { strictAllowScripts: true },
+        config: { get: () => undefined },
+      },
       idealTreeOpts: {},
     }),
     (err) => {

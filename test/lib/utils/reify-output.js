@@ -615,6 +615,34 @@ t.test('global install suggests --allow-scripts, not approve-scripts', async t =
   t.notMatch(warn, /approve-scripts/)
 })
 
+t.test('global install keeps existing user allow-scripts in npm config set', async t => {
+  const mock = await mockNpm(t, {
+    config: { global: true },
+    homeDir: { '.npmrc': 'allow-scripts=esbuild,sharp\n' },
+  })
+
+  reifyOutput(mock.npm, {
+    actualTree: { name: 'host', inventory: { has: () => false } },
+    diff: { children: [] },
+  }, {
+    unreviewedScripts: [
+      {
+        node: { packageName: 'canvas', name: 'canvas', version: '2.11.0', path: '/x/canvas' },
+        scripts: { install: 'node-gyp rebuild' },
+      },
+      {
+        node: { packageName: 'sharp', name: 'sharp', version: '0.33.2', path: '/x/sharp' },
+        scripts: { postinstall: 'post' },
+      },
+    ],
+  })
+  mock.npm.finish()
+
+  const warn = mock.logs.warn.byTitle('install-scripts').join('\n')
+  t.match(warn, /npm install -g --allow-scripts=canvas,sharp`/)
+  t.match(warn, /npm config set allow-scripts=esbuild,sharp,canvas --location=user/)
+})
+
 t.test('single unreviewed script uses singular wording', async t => {
   const mockReifyWithExtras = async (t, reify, extras) => {
     const mock = await mockNpm(t, {})
